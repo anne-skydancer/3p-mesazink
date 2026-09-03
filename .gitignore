@@ -2,3 +2,6 @@ build/
 mesa-src/
 __pycache__/
 *.pyc
+
+*.tar.zst
+package-results.json
