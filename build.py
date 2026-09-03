@@ -54,7 +54,25 @@ def remove_tree(path: Path):
         os.chmod(filename, stat.S_IWRITE)
         function(filename)
 
-    shutil.rmtree(path, onerror=remove_readonly)
+    # The freshly-created directory is briefly grabbed by the Windows search
+    # indexer / AV scanner, so deletion can fail with WinError 32. Retry a
+    # few times with a short backoff.
+    import time
+    for attempt in range(10):
+        try:
+            shutil.rmtree(path, onerror=remove_readonly)
+            return
+        except PermissionError:
+            if attempt == 9:
+                raise
+            time.sleep(1)
+
+
+def swap_into_place(temp: Path, out: Path):
+    """Atomically-ish replace out with temp (built alongside, then moved)."""
+    if out.exists():
+        remove_tree(out)
+    temp.rename(out)
 
 
 def ensure_checkout(destination: Path):
@@ -105,7 +123,8 @@ def build_mesa(source: Path, check_only: bool) -> None:
 
     ninja = ensure_python_build_tools()
     build_dir = source / "build-vulkanstorm"
-    if not (build_dir / "build.ninja").exists():
+    configured = (build_dir / "build.ninja").exists()
+    if not configured:
         run([
             sys.executable, "-m", "mesonbuild.mesonmain", "setup", str(build_dir),
             "-Dbuildtype=release",
@@ -120,28 +139,39 @@ def build_mesa(source: Path, check_only: bool) -> None:
             "-Dmicrosoft-clc=disabled",
             "-Dzlib:default_library=static",
         ], cwd=source)
-    run([str(ninja), "-C", str(build_dir)])
+        # -Dvsenv=true makes meson capture the Visual Studio environment and
+        # drive the compile through its own vsenv-activated backend. A bare
+        # ninja invocation afterwards would not have cl.exe on PATH, so the
+        # first compile must go through meson.
+        run([sys.executable, "-m", "mesonbuild.mesonmain", "compile", "-C", str(build_dir)], cwd=source)
+    else:
+        run([str(ninja), "-C", str(build_dir)])
 
 
 def assemble(source: Path, out: Path) -> None:
-    if out.exists():
-        remove_tree(out)
-
-    release_dir = out / "bin" / "release"
-    license_dir = out / "LICENSES"
-    release_dir.mkdir(parents=True, exist_ok=True)
-    license_dir.mkdir(parents=True, exist_ok=True)
-
+    # Assemble in place: never delete the output directory. Deleting a
+    # just-created directory races the Windows search indexer / AV scanner
+    # (WinError 32 on the directory handle), which is unrecoverable from
+    # inside the process once the handle is taken.
     build_dir = source / "build-vulkanstorm"
     artifacts = [
-        (build_dir / "src/gallium/targets/wgl/libgallium_wgl.dll", release_dir),
-        (build_dir / "src/gallium/targets/libgl-gdi/opengl32.dll", release_dir),
+        (build_dir / "src/gallium/targets/wgl/libgallium_wgl.dll", out / "bin" / "release" / "libgallium_wgl.dll"),
+        (build_dir / "src/gallium/targets/libgl-gdi/opengl32.dll", out / "bin" / "release" / "opengl32.dll"),
+        (source / "docs/license.rst", out / "LICENSES" / "mesazink.txt"),
     ]
-    for src, dst_dir in artifacts:
+    for src, _ in artifacts:
         if not src.exists():
             raise RuntimeError(f"Expected build artifact missing: {src}")
-        shutil.copy2(src, dst_dir)
-    shutil.copy2(source / "docs/license.rst", license_dir / "mesazink.txt")
+
+    (out / "bin" / "release").mkdir(parents=True, exist_ok=True)
+    (out / "LICENSES").mkdir(parents=True, exist_ok=True)
+    for src, dst in artifacts:
+        if not dst.exists() or dst.stat().st_mtime < src.stat().st_mtime:
+            shutil.copy2(src, dst)
+
+    # autobuild reads version_file relative to the build directory.
+    (out / "VERSION.txt").write_text("26.3.0-devel-git.00e42c51b1\n", encoding="utf-8")
+    print(f"mesazink package assembled: {out}")
 
 
 def parse_args():

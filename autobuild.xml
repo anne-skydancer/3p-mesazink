@@ -19,27 +19,45 @@
         <string>LICENSES/mesazink.txt</string>
         <key>name</key>
         <string>mesazink</string>
-        <key>version</key>
-        <string>26.3.0-devel-git.00e42c51b1</string>
+        <key>version_file</key>
+        <string>VERSION.txt</string>
+        <key>platforms</key>
+        <map>
+            <key>windows64</key>
+            <map>
+                <key>build_directory</key>
+                <string>build</string>
+                <key>manifest</key>
+                <array>
+                    <string>bin/release/opengl32.dll</string>
+                    <string>bin/release/libgallium_wgl.dll</string>
+                    <string>LICENSES/mesazink.txt</string>
+                </array>
+                <key>configurations</key>
+                <map>
+                    <key>release</key>
+                    <map>
+                        <key>build</key>
+                        <map>
+                            <key>command</key>
+                            <string>python</string>
+                            <key>options</key>
+                            <array>
+                                <string>../build.py</string>
+                            </array>
+                        </map>
+                        <key>default</key>
+                        <string>True</string>
+                        <key>name</key>
+                        <string>release</string>
+                    </map>
+                </map>
+                <key>name</key>
+                <string>windows64</string>
+            </map>
+        </map>
     </map>
     <key>type</key>
     <string>autobuild</string>
-    <key>configurations</key>
-    <map>
-        <key>windows64</key>
-        <map>
-            <key>build</key>
-            <map>
-                <key>command</key>
-                <string>python</string>
-                <key>options</key>
-                <array>
-                    <string>../build.py</string>
-                </array>
-            </map>
-            <key>name</key>
-            <string>windows64</string>
-        </map>
-    </map>
 </map>
 </llsd>
