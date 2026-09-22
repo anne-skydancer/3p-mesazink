@@ -26,7 +26,7 @@ def main():
     options = [
         '--prefix=/usr', '--libdir=lib', '-Dbuildtype=release',
         '-Dplatforms=x11', '-Dgallium-drivers=zink', '-Dvulkan-drivers=',
-        '-Dllvm=disabled', '-Dglx=dri', '-Dglvnd=enabled', '-Degl=disabled',
+        '-Dllvm=disabled', '-Dglx=dri', '-Dglvnd=enabled', '-Dglvnd-vendor-name=vulkanstorm', '-Degl=disabled',
         '-Dgbm=disabled', '-Dgles1=disabled', '-Dgles2=disabled',
         '-Dgallium-va=disabled', '-Dmicrosoft-clc=disabled',
         '-Dbuild-tests=false', '-Dvideo-codecs=',
@@ -37,11 +37,14 @@ def main():
     lib = out / 'lib/release/mesa'
     lib.mkdir(parents=True, exist_ok=True)
     gallium = build / 'src/gallium/targets/dri' / f'libgallium-{MESA_VERSION}.so'
-    glx = build / 'src/glx/libGLX_mesa.so.0.0.0'
-    for src, name in [(gallium, gallium.name), (glx, 'libGLX_mesa.so.0')]:
+    glx = build / 'src/glx/libGLX_vulkanstorm.so.0.0.0'
+    for src, name in [(gallium, 'libgallium_vulkanstorm.so'), (glx, 'libGLX_vulkanstorm.so.0')]:
         shutil.copy2(src, lib / name)
         # Keep the matching Gallium library beside its GLX provider after relocation.
         run(['patchelf', '--set-rpath', '$ORIGIN', str(lib / name)])
+    run(['patchelf', '--set-soname', 'libgallium_vulkanstorm.so', str(lib / 'libgallium_vulkanstorm.so')])
+    run(['patchelf', '--replace-needed', gallium.name, 'libgallium_vulkanstorm.so',
+         str(lib / 'libGLX_vulkanstorm.so.0')])
     (out / 'LICENSES').mkdir(exist_ok=True)
     shutil.copy2(source / 'docs/license.rst', out / 'LICENSES/mesazink.txt')
     (out / 'VERSION.txt').write_text(PACKAGE_VERSION + '\n')

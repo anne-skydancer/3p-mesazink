@@ -28,8 +28,8 @@
                 <key>build_directory</key><string>build</string>
                 <key>manifest</key>
                 <array>
-                    <string>lib/release/mesa/libGLX_mesa.so.0</string>
-                    <string>lib/release/mesa/libgallium-26.3.0-devel.so</string>
+                    <string>lib/release/mesa/libGLX_vulkanstorm.so.0</string>
+                    <string>lib/release/mesa/libgallium_vulkanstorm.so</string>
                     <string>LICENSES/mesazink.txt</string>
                 </array>
                 <key>configurations</key>

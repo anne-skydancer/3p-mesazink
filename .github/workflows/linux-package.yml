@@ -30,7 +30,7 @@ jobs:
           done
           ! grep 'not found' build/dependencies.txt
           export LD_LIBRARY_PATH="$PWD/build/lib/release/mesa"
-          export __GLX_VENDOR_LIBRARY_NAME=mesa
+          export __GLX_VENDOR_LIBRARY_NAME=vulkanstorm
           export MESA_LOADER_DRIVER_OVERRIDE=zink GALLIUM_DRIVER=zink LIBGL_KOPPER_DRI2=true
           export VK_DRIVER_FILES="$(find /usr/share/vulkan/icd.d -name 'lvp_icd*.json' -print -quit)"
           test -n "$VK_DRIVER_FILES"

@@ -84,8 +84,8 @@ Mesa: MIT (see `LICENSES/mesazink.txt`, copied from Mesa's
 with Zink as the only Gallium driver and a GLVND GLX provider for the viewer's
 SDL/X11 OpenGL path. The package contains:
 
-- `lib/release/mesa/libGLX_mesa.so.0`
-- `lib/release/mesa/libgallium-26.3.0-devel.so`
+- `lib/release/mesa/libGLX_vulkanstorm.so.0`
+- `lib/release/mesa/libgallium_vulkanstorm.so`
 - `LICENSES/mesazink.txt`
 
 The GLX provider locates its matching Gallium library through `$ORIGIN`.
@@ -110,7 +110,7 @@ For an extracted package, a standalone GLX smoke check is:
 
 ```sh
 LD_LIBRARY_PATH="$PWD/lib/release/mesa${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" \
-__GLX_VENDOR_LIBRARY_NAME=mesa MESA_LOADER_DRIVER_OVERRIDE=zink \
+__GLX_VENDOR_LIBRARY_NAME=vulkanstorm MESA_LOADER_DRIVER_OVERRIDE=zink \
 GALLIUM_DRIVER=zink glxinfo -B
 ```
 
