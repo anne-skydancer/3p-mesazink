@@ -77,3 +77,36 @@ DLLs with symbols; compare builds made with identical options and toolchain.
 
 Mesa: MIT (see `LICENSES/mesazink.txt`, copied from Mesa's
 `docs/license.rst`).
+
+## Linux x86-64 package
+
+`build_linux.py` builds the same pinned Mesa revision and patches as Windows,
+with Zink as the only Gallium driver and a GLVND GLX provider for the viewer's
+SDL/X11 OpenGL path. The package contains:
+
+- `lib/release/mesa/libGLX_mesa.so.0`
+- `lib/release/mesa/libgallium-26.3.0-devel.so`
+- `LICENSES/mesazink.txt`
+
+The GLX provider locates its matching Gallium library through `$ORIGIN`.
+System GLVND, X11/XCB, libdrm, and the system Vulkan loader/ICD remain external
+runtime dependencies. The CI build targets Ubuntu 24.04 x86-64, matching the
+viewer CI; compatibility with older distributions has not been qualified.
+EGL/Wayland and vendor Vulkan drivers are not included in this package.
+
+The Linux package workflow records ELF dependencies and runs `glxinfo` through
+Zink using Xvfb and the runner's software Vulkan driver before packaging.
+This smoke check does not qualify AMD/NVIDIA rendering or viewer performance.
+
+For an extracted package, a standalone GLX smoke check is:
+
+```sh
+LD_LIBRARY_PATH="$PWD/lib/release/mesa${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" \
+__GLX_VENDOR_LIBRARY_NAME=mesa MESA_LOADER_DRIVER_OVERRIDE=zink \
+GALLIUM_DRIVER=zink glxinfo -B
+```
+
+Do not install these libraries over the system Mesa libraries. Viewer package
+staging and renderer selection must explicitly opt into this private provider.
+The viewer's Linux renderer selector integration is separate from producing
+this downloadable runtime.
