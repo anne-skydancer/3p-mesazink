@@ -28,12 +28,14 @@ import sys
 MESA_REPOSITORY = "https://gitlab.freedesktop.org/mesa/mesa.git"
 MESA_REVISION = "00e42c51b10d8e0769489156fa414f111897d515"
 MESA_VERSION = "26.3.0-devel"
+PACKAGE_VERSION = "26.3.0-devel-git.00e42c51b1-wglinit1"
 
 ROOT = Path(__file__).resolve().parent
 PATCH_DIR = ROOT / "patches"
 PATCHES = [
     PATCH_DIR / "mesa-zink-null-guards.patch",
     PATCH_DIR / "mesa-msvc-release.patch",
+    PATCH_DIR / "mesa-wgl-loader-init.patch",
 ]
 
 
@@ -170,7 +172,7 @@ def assemble(source: Path, out: Path) -> None:
             shutil.copy2(src, dst)
 
     # autobuild reads version_file relative to the build directory.
-    (out / "VERSION.txt").write_text("26.3.0-devel-git.00e42c51b1\n", encoding="utf-8")
+    (out / "VERSION.txt").write_text(PACKAGE_VERSION + "\n", encoding="utf-8")
     print(f"mesazink package assembled: {out}")
 
 
