@@ -23,6 +23,30 @@
         <string>VERSION.txt</string>
         <key>platforms</key>
         <map>
+            <key>linux64</key>
+            <map>
+                <key>build_directory</key><string>build</string>
+                <key>manifest</key>
+                <array>
+                    <string>lib/release/mesa/libGLX_vulkanstorm.so.0</string>
+                    <string>lib/release/mesa/libgallium_vulkanstorm.so</string>
+                    <string>LICENSES/mesazink.txt</string>
+                </array>
+                <key>configurations</key>
+                <map>
+                    <key>release</key>
+                    <map>
+                        <key>build</key>
+                        <map>
+                            <key>command</key><string>python</string>
+                            <key>options</key><array><string>../build_linux.py</string></array>
+                        </map>
+                        <key>default</key><string>True</string>
+                        <key>name</key><string>release</string>
+                    </map>
+                </map>
+                <key>name</key><string>linux64</string>
+            </map>
             <key>windows64</key>
             <map>
                 <key>build_directory</key>
