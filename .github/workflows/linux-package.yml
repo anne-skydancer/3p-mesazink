@@ -1,0 +1,55 @@
+name: Linux Mesa Zink package
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, codex/linux-mesazink-package]
+    paths: [build_linux.py, build.py, autobuild.xml, '.github/workflows/linux-package.yml', 'patches/**']
+permissions:
+  contents: read
+jobs:
+  linux:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential ninja-build pkg-config bison flex patchelf libdrm-dev libglvnd-dev libx11-dev libxext-dev libxfixes-dev libxdamage-dev libx11-xcb-dev libxcb-glx0-dev libxcb-dri2-0-dev libxcb-dri3-dev libxcb-present-dev libxcb-sync-dev libxcb-randr0-dev libxshmfence-dev libxxf86vm-dev libexpat1-dev zlib1g-dev libzstd-dev mesa-utils mesa-vulkan-drivers xvfb xauth
+          python -m pip install autobuild==3.9.3 meson mako packaging pyyaml setuptools
+      - name: Build
+        run: autobuild build -A 64 -c release --no-configure --id "$GITHUB_RUN_ID"
+      - name: Verify runtime
+        run: |
+          set -euo pipefail
+          for lib in build/lib/release/mesa/*.so*; do
+            readelf -h "$lib" | grep 'Advanced Micro Devices X86-64'
+            ldd "$lib" | tee -a build/dependencies.txt
+          done
+          ! grep 'not found' build/dependencies.txt
+          export LD_LIBRARY_PATH="$PWD/build/lib/release/mesa"
+          export __GLX_VENDOR_LIBRARY_NAME=mesa
+          export MESA_LOADER_DRIVER_OVERRIDE=zink GALLIUM_DRIVER=zink LIBGL_KOPPER_DRI2=true
+          export VK_DRIVER_FILES=/usr/share/vulkan/icd.d/lvp_icd.x86_64.json
+          xvfb-run -a glxinfo -B | tee build/glxinfo.txt
+          grep -i 'OpenGL renderer string:.*zink' build/glxinfo.txt
+      - name: Package
+        run: |
+          autobuild package -A 64 --archive-format tzst --archive-name "$GITHUB_WORKSPACE/mesazink-26.3.0-devel-git.00e42c51b1-linux64-g00e42c51b1" --results-file build/package-results.txt
+          sha256sum *.tar.zst > mesazink-linux64.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mesazink-linux64
+          path: |
+            *.tar.zst
+            *.sha256
+            build/package-results.txt
+            build/glxinfo.txt
+            build/dependencies.txt
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: linux-failure-logs
+          path: mesa-src/build-linux-zink/meson-logs/
