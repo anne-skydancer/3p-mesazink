@@ -37,6 +37,7 @@ jobs:
           cat "$VK_DRIVER_FILES"
           vulkaninfo --summary
           export VK_LOADER_DEBUG=error,warn
+          export LIBGL_ALWAYS_SOFTWARE=true
           xvfb-run -a glxinfo -B | tee build/glxinfo.txt
           grep -i 'OpenGL renderer string:.*zink' build/glxinfo.txt
       - name: Package
