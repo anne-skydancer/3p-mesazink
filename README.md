@@ -94,6 +94,14 @@ runtime dependencies. The CI build targets Ubuntu 24.04 x86-64, matching the
 viewer CI; compatibility with older distributions has not been qualified.
 EGL/Wayland and vendor Vulkan drivers are not included in this package.
 
+On Linux, install the development dependencies listed in
+`.github/workflows/linux-package.yml`, then run:
+
+```sh
+autobuild build -A 64 -c release --no-configure
+autobuild package -A 64 --archive-format tzst
+```
+
 The Linux package workflow records ELF dependencies and runs `glxinfo` through
 Zink using Xvfb and the runner's software Vulkan driver before packaging.
 This smoke check does not qualify AMD/NVIDIA rendering or viewer performance.
