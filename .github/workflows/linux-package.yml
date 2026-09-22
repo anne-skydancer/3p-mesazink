@@ -17,7 +17,7 @@ jobs:
       - name: Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential ninja-build pkg-config bison flex patchelf libdrm-dev libglvnd-dev libx11-dev libxext-dev libxrandr-dev libxcb-xfixes0-dev libxfixes-dev libxdamage-dev libx11-xcb-dev libxcb-shm0-dev libxcb-glx0-dev libxcb-dri2-0-dev libxcb-dri3-dev libxcb-present-dev libxcb-sync-dev libxcb-randr0-dev libxshmfence-dev libxxf86vm-dev libexpat1-dev zlib1g-dev libzstd-dev mesa-utils mesa-vulkan-drivers xvfb xauth
+          sudo apt-get install -y build-essential ninja-build pkg-config bison flex patchelf libdrm-dev libglvnd-dev libx11-dev libxext-dev libxrandr-dev libxcb-xfixes0-dev libxfixes-dev libxdamage-dev libx11-xcb-dev libxcb-shm0-dev libxcb-glx0-dev libxcb-dri2-0-dev libxcb-dri3-dev libxcb-present-dev libxcb-sync-dev libxcb-randr0-dev libxshmfence-dev libxxf86vm-dev libexpat1-dev zlib1g-dev libzstd-dev mesa-utils vulkan-tools mesa-vulkan-drivers xvfb xauth
           python -m pip install autobuild==3.9.3 meson mako packaging pyyaml setuptools
       - name: Build
         run: autobuild build -A 64 -c release --no-configure --id "$GITHUB_RUN_ID"
@@ -32,7 +32,11 @@ jobs:
           export LD_LIBRARY_PATH="$PWD/build/lib/release/mesa"
           export __GLX_VENDOR_LIBRARY_NAME=mesa
           export MESA_LOADER_DRIVER_OVERRIDE=zink GALLIUM_DRIVER=zink LIBGL_KOPPER_DRI2=true
-          export VK_DRIVER_FILES=/usr/share/vulkan/icd.d/lvp_icd.x86_64.json
+          export VK_DRIVER_FILES="$(find /usr/share/vulkan/icd.d -name 'lvp_icd*.json' -print -quit)"
+          test -n "$VK_DRIVER_FILES"
+          cat "$VK_DRIVER_FILES"
+          vulkaninfo --summary
+          export VK_LOADER_DEBUG=error,warn
           xvfb-run -a glxinfo -B | tee build/glxinfo.txt
           grep -i 'OpenGL renderer string:.*zink' build/glxinfo.txt
       - name: Package
