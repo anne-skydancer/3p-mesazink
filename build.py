@@ -28,7 +28,7 @@ import sys
 MESA_REPOSITORY = "https://gitlab.freedesktop.org/mesa/mesa.git"
 MESA_REVISION = "00e42c51b10d8e0769489156fa414f111897d515"
 MESA_VERSION = "26.3.0-devel"
-PACKAGE_VERSION = "26.3.0-devel-git.00e42c51b1-wglinit1"
+PACKAGE_VERSION = "26.3.0-devel-git.00e42c51b1"
 
 ROOT = Path(__file__).resolve().parent
 PATCH_DIR = ROOT / "patches"

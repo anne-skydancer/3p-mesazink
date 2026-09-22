@@ -19,8 +19,8 @@ support. Three local patches are applied on top:
 | `patches/mesa-msvc-release.patch` | MSVC release-build fix in the SPIR-V cooperative-matrix translator. |
 | `patches/mesa-wgl-loader-init.patch` | Initialize all Kopper loader metadata and inherit the effective WGL swap interval. |
 
-The `wglinit1` package suffix distinguishes the metadata correction from the
-previous package without changing the pinned Mesa revision. The patch preserves
+The loader metadata correction is included in the existing package baseline,
+without changing its version or the pinned Mesa revision. The patch preserves
 alpha-capable presentation; it does not force opaque surfaces or change Windows
 present-mode selection or fence waits. Performance and visual effects require
 runtime validation.
