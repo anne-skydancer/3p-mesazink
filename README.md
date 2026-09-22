@@ -11,12 +11,19 @@ pipeline over Vulkan ("Mesa/Zink" renderer selection).
 | Mesa (Zink gallium driver, WGL frontend) | [gitlab.freedesktop.org/mesa/mesa](https://gitlab.freedesktop.org/mesa/mesa) | `00e42c51b10d8e0769489156fa414f111897d515` (`26.3.0-devel`) | `bin/release/opengl32.dll`, `bin/release/libgallium_wgl.dll` |
 
 The pinned Mesa main revision already carries AMD RX9000-series (gfx12/RADV)
-support. Two local patches are applied on top:
+support. Three local patches are applied on top:
 
 | Patch | Purpose |
 |---|---|
 | `patches/mesa-zink-null-guards.patch` | Crash-region fix: degrade gracefully on failed shader/program creation instead of crashing (pipe_nir, zink batch/context/screen, null_fs). |
 | `patches/mesa-msvc-release.patch` | MSVC release-build fix in the SPIR-V cooperative-matrix translator. |
+| `patches/mesa-wgl-loader-init.patch` | Initialize all Kopper loader metadata and inherit the effective WGL swap interval. |
+
+The `wglinit1` package suffix distinguishes the metadata correction from the
+previous package without changing the pinned Mesa revision. The patch preserves
+alpha-capable presentation; it does not force opaque surfaces or change Windows
+present-mode selection or fence waits. Performance and visual effects require
+runtime validation.
 
 ## Build configuration
 
@@ -53,6 +60,18 @@ autobuild package          # produce the release tarball
 ```
 
 `python build.py --check` fetches and patches the sources without compiling.
+
+For the loader initialization regression check on Windows, with a Windows-targeting
+Clang on PATH:
+
+```
+python tests/check_wgl_loader_init.py <patched-mesa-source>
+```
+
+This compiles the actual helper extracted from that source and checks surface
+fields and complete metadata against 32 poisoned-output cases. It does not open
+a window or qualify driver behavior. Use Meson `debugoptimized` for diagnostic
+DLLs with symbols; compare builds made with identical options and toolchain.
 
 ## Licenses
 

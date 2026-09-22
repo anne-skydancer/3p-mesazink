@@ -1,0 +1,22 @@
+diff --git a/src/gallium/frontends/wgl/stw_st.c b/src/gallium/frontends/wgl/stw_st.c
+index e95c5fae7d1..4eeba79e2a6 100644
+--- a/src/gallium/frontends/wgl/stw_st.c
++++ b/src/gallium/frontends/wgl/stw_st.c
+@@ -135,6 +135,8 @@ static_assert(sizeof(struct kopper_vk_surface_create_storage) >= sizeof(VkWin32S
+ static void
+ stw_st_fill_private_loader_data(struct stw_st_framebuffer *stwfb, struct kopper_loader_info *out)
+ {
++   /* Kopper copies the whole structure, including optional presentation fields. */
++   memset(out, 0, sizeof(*out));
+    VkWin32SurfaceCreateInfoKHR *win32 = (VkWin32SurfaceCreateInfoKHR *)&out->bos;
+    win32->sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
+    win32->pNext = NULL;
+@@ -142,6 +144,8 @@ stw_st_fill_private_loader_data(struct stw_st_framebuffer *stwfb, struct kopper_
+    win32->hinstance = GetModuleHandle(NULL);
+    win32->hwnd = stwfb->fb->hWnd;
+    out->has_alpha = true;
++   out->initial_swap_interval = stwfb->fb->swap_interval == -1
++      ? stw_dev->swap_interval : stwfb->fb->swap_interval;
+ }
+ #endif
+ /**
