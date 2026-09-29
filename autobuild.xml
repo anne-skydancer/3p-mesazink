@@ -12,7 +12,7 @@
         <key>copyright</key>
         <string>Copyright (C) 1999-2007 Brian Paul. All Rights Reserved.</string>
         <key>description</key>
-        <string>Mesa Zink Gallium driver for OpenGL-over-Vulkan (patched: AMD RX9000-series support, viewer crash-region fixes)</string>
+        <string>Mesa Zink OpenGL-over-Vulkan runtime with MSVC release, WGL loader initialization and defensive null-guard patches</string>
         <key>license</key>
         <string>MIT</string>
         <key>license_file</key>
@@ -31,6 +31,9 @@
                     <string>lib/release/mesa/libGLX_vulkanstorm.so.0</string>
                     <string>lib/release/mesa/libgallium_vulkanstorm.so</string>
                     <string>LICENSES/mesazink.txt</string>
+                    <string>VERSION.txt</string>
+                    <string>package-provenance.json</string>
+                    <string>assembly-complete.json</string>
                 </array>
                 <key>configurations</key>
                 <map>
@@ -56,6 +59,9 @@
                     <string>bin/release/opengl32.dll</string>
                     <string>bin/release/libgallium_wgl.dll</string>
                     <string>LICENSES/mesazink.txt</string>
+                    <string>VERSION.txt</string>
+                    <string>package-provenance.json</string>
+                    <string>assembly-complete.json</string>
                 </array>
                 <key>configurations</key>
                 <map>

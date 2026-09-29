@@ -8,6 +8,7 @@ import shutil
 import sys
 
 from build import ROOT, MESA_VERSION, PACKAGE_VERSION, ensure_checkout, run
+from package_support import begin, configure, build_directory, toolchain_identity, assemble
 
 
 def main():
@@ -18,10 +19,12 @@ def main():
     if sys.platform != 'linux' or platform.machine() != 'x86_64':
         parser.error('requires Linux x86-64')
     source, out = args.root.resolve(), args.out.resolve()
+    begin(out)
     ensure_checkout(source)
     if (source / 'VERSION').read_text().strip() != MESA_VERSION:
         raise RuntimeError('Unexpected Mesa source version')
-    build = source / 'build-linux-zink'
+    toolchain = toolchain_identity()
+    build = build_directory(source, 'build-linux-zink', toolchain)
     meson = [sys.executable, '-m', 'mesonbuild.mesonmain']
     options = [
         '--prefix=/usr', '--libdir=lib', '-Dbuildtype=release',
@@ -31,23 +34,21 @@ def main():
         '-Dgallium-va=disabled', '-Dmicrosoft-clc=disabled',
         '-Dbuild-tests=false', '-Dvideo-codecs=',
     ]
-    run(meson + ['setup'] + (['--reconfigure'] if (build / 'build.ninja').exists() else [])
-        + [str(build), str(source)] + options)
+    configuration = configure(source, build, options, run)
     run(meson + ['compile', '-C', str(build), '-j', str(min(os.cpu_count() or 2, 4))])
-    lib = out / 'lib/release/mesa'
-    lib.mkdir(parents=True, exist_ok=True)
     gallium = build / 'src/gallium/targets/dri' / f'libgallium-{MESA_VERSION}.so'
     glx = build / 'src/glx/libGLX_vulkanstorm.so.0.0.0'
-    for src, name in [(gallium, 'libgallium_vulkanstorm.so'), (glx, 'libGLX_vulkanstorm.so.0')]:
-        shutil.copy2(src, lib / name)
-        # Keep the matching Gallium library beside its GLX provider after relocation.
-        run(['patchelf', '--set-rpath', '$ORIGIN', str(lib / name)])
-    run(['patchelf', '--set-soname', 'libgallium_vulkanstorm.so', str(lib / 'libgallium_vulkanstorm.so')])
-    run(['patchelf', '--replace-needed', gallium.name, 'libgallium_vulkanstorm.so',
-         str(lib / 'libGLX_vulkanstorm.so.0')])
-    (out / 'LICENSES').mkdir(exist_ok=True)
-    shutil.copy2(source / 'docs/license.rst', out / 'LICENSES/mesazink.txt')
-    (out / 'VERSION.txt').write_text(PACKAGE_VERSION + '\n')
+    def relocate(stage):
+        lib = stage / 'lib/release/mesa'
+        for name in ['libgallium_vulkanstorm.so', 'libGLX_vulkanstorm.so.0']:
+            run(['patchelf', '--set-rpath', '$ORIGIN', str(lib / name)])
+        run(['patchelf', '--set-soname', 'libgallium_vulkanstorm.so', str(lib / 'libgallium_vulkanstorm.so')])
+        run(['patchelf', '--replace-needed', gallium.name, 'libgallium_vulkanstorm.so',
+             str(lib / 'libGLX_vulkanstorm.so.0')])
+    assemble(out, [(gallium, 'lib/release/mesa/libgallium_vulkanstorm.so'),
+                   (glx, 'lib/release/mesa/libGLX_vulkanstorm.so.0'),
+                   (source / 'docs/license.rst', 'LICENSES/mesazink.txt')],
+             configuration, toolchain, relocate)
 
 
 if __name__ == '__main__':

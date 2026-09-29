@@ -26,17 +26,11 @@ import subprocess
 import sys
 
 MESA_REPOSITORY = "https://gitlab.freedesktop.org/mesa/mesa.git"
-MESA_REVISION = "00e42c51b10d8e0769489156fa414f111897d515"
-MESA_VERSION = "26.3.0-devel"
-PACKAGE_VERSION = "26.3.0-devel-git.00e42c51b1"
-
-ROOT = Path(__file__).resolve().parent
+from package_support import (MESA_REVISION, MESA_VERSION, PACKAGE_VERSION, ROOT, PATCHES,
+                             toolchain_identity, build_directory, configure, begin,
+                             assemble as assemble_payload)
 PATCH_DIR = ROOT / "patches"
-PATCHES = [
-    PATCH_DIR / "mesa-zink-null-guards.patch",
-    PATCH_DIR / "mesa-msvc-release.patch",
-    PATCH_DIR / "mesa-wgl-loader-init.patch",
-]
+
 
 
 def run(command, cwd=None):
@@ -89,7 +83,7 @@ def ensure_checkout(destination: Path):
         return
 
     if destination.exists():
-        remove_tree(destination)
+        raise RuntimeError(f"Existing checkout has a different source identity: {destination}; choose a new --root")
     destination.parent.mkdir(parents=True, exist_ok=True)
     run(["git", "clone", "--filter=blob:none", "--no-checkout", MESA_REPOSITORY, str(destination)])
     run(["git", "checkout", "--detach", MESA_REVISION], cwd=destination)
@@ -124,56 +118,26 @@ def build_mesa(source: Path, check_only: bool) -> None:
         return
 
     ninja = ensure_python_build_tools()
-    build_dir = source / "build-vulkanstorm"
-    configured = (build_dir / "build.ninja").exists()
-    if not configured:
-        run([
-            sys.executable, "-m", "mesonbuild.mesonmain", "setup", str(build_dir),
-            "-Dbuildtype=release",
-            "-Dvsenv=true",
-            "-Dgallium-drivers=zink",
-            "-Dvulkan-drivers=",
-            "-Dllvm=disabled",
-            "-Dgles1=disabled",
-            "-Dgles2=disabled",
-            "-Dglx=disabled",
-            "-Degl=disabled",
-            "-Dmicrosoft-clc=disabled",
-            "-Dzlib:default_library=static",
-        ], cwd=source)
-        # -Dvsenv=true makes meson capture the Visual Studio environment and
-        # drive the compile through its own vsenv-activated backend. A bare
-        # ninja invocation afterwards would not have cl.exe on PATH, so the
-        # first compile must go through meson.
-        run([sys.executable, "-m", "mesonbuild.mesonmain", "compile", "-C", str(build_dir)], cwd=source)
-    else:
-        run([str(ninja), "-C", str(build_dir)])
-
-
-def assemble(source: Path, out: Path) -> None:
-    # Assemble in place: never delete the output directory. Deleting a
-    # just-created directory races the Windows search indexer / AV scanner
-    # (WinError 32 on the directory handle), which is unrecoverable from
-    # inside the process once the handle is taken.
-    build_dir = source / "build-vulkanstorm"
-    artifacts = [
-        (build_dir / "src/gallium/targets/wgl/libgallium_wgl.dll", out / "bin" / "release" / "libgallium_wgl.dll"),
-        (build_dir / "src/gallium/targets/libgl-gdi/opengl32.dll", out / "bin" / "release" / "opengl32.dll"),
-        (source / "docs/license.rst", out / "LICENSES" / "mesazink.txt"),
+    toolchain = toolchain_identity()
+    build_dir = build_directory(source, "build-vulkanstorm", toolchain)
+    options = [
+        "-Dbuildtype=release", "-Dvsenv=true", "-Dgallium-drivers=zink",
+        "-Dvulkan-drivers=", "-Dllvm=disabled", "-Dgles1=disabled", "-Dgles2=disabled",
+        "-Dglx=disabled", "-Degl=disabled", "-Dmicrosoft-clc=disabled",
+        "-Dzlib:default_library=static",
     ]
-    for src, _ in artifacts:
-        if not src.exists():
-            raise RuntimeError(f"Expected build artifact missing: {src}")
+    configuration = configure(source, build_dir, options, run)
+    run([sys.executable, "-m", "mesonbuild.mesonmain", "compile", "-C", str(build_dir)])
+    return build_dir, configuration, toolchain
 
-    (out / "bin" / "release").mkdir(parents=True, exist_ok=True)
-    (out / "LICENSES").mkdir(parents=True, exist_ok=True)
-    for src, dst in artifacts:
-        if not dst.exists() or dst.stat().st_mtime < src.stat().st_mtime:
-            shutil.copy2(src, dst)
 
-    # autobuild reads version_file relative to the build directory.
-    (out / "VERSION.txt").write_text(PACKAGE_VERSION + "\n", encoding="utf-8")
-    print(f"mesazink package assembled: {out}")
+def assemble(source: Path, out: Path, build_dir, configuration, toolchain) -> None:
+    artifacts = [
+        (build_dir / "src/gallium/targets/wgl/libgallium_wgl.dll", "bin/release/libgallium_wgl.dll"),
+        (build_dir / "src/gallium/targets/libgl-gdi/opengl32.dll", "bin/release/opengl32.dll"),
+        (source / "docs/license.rst", "LICENSES/mesazink.txt"),
+    ]
+    assemble_payload(out, artifacts, configuration, toolchain)
 
 
 def parse_args():
@@ -189,10 +153,12 @@ def parse_args():
 
 def main() -> int:
     args = parse_args()
-    ensure_checkout(args.root)
-    build_mesa(args.root, args.check)
     if not args.check:
-        assemble(args.root, args.out)
+        begin(args.out)
+    ensure_checkout(args.root)
+    result = build_mesa(args.root, args.check)
+    if not args.check:
+        assemble(args.root, args.out, *result)
         print(f"mesazink package assembled: {args.out}")
         print(f"  Mesa: {MESA_REVISION} ({MESA_VERSION})")
         for patch in PATCHES:
