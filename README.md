@@ -120,7 +120,7 @@ The viewer's Linux renderer selector integration is separate from producing
 this downloadable runtime.
 
 
-## Reliable build/package workflow (pkg2)
+## Reliable build/package workflow
 
 `package_support.py` is the version authority (`python package_support.py --version`).
 The build directory's generated mesazink-version.txt is the version consumed by Autobuild.
@@ -164,9 +164,13 @@ Windows/Linux package qualification and RX 9070 XT rendering-mechanism tests pas
 See [qualification results](QUALIFICATION.md) for exact coverage and archive hashes.
 A logged-in Second Life scene remains to be qualified; the viewer pin is unchanged.
 
-## pkg2 integration correction
+## Shared dependency metadata
 
 The shared viewer dependency directory already contains SoLoud's `VERSION.txt`.
-Mesa pkg2 uses `mesazink-version.txt` for its version authority and both archive
+The Mesa package uses `mesazink-version.txt` for its version authority and both archive
 manifests. The source revision and runtime patches are unchanged. A regression
 test checks that existing dependency metadata remains untouched.
+
+## Package naming
+
+Package versions retain the upstream Mesa version (`26.3.0-devel`) without added Git or packaging suffixes. Source revisions, patches, recipe identity and payload hashes belong in `package-provenance.json`; archive checksums identify the delivered packages. `mesazink-version.txt` avoids the shared dependency directory collision with SoLoud without changing Mesa's version.

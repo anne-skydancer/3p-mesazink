@@ -13,7 +13,7 @@ import uuid
 ROOT = Path(__file__).resolve().parent
 MESA_REVISION = "4c18bbc63765c2f468c3fa094242e8654e78d196"
 MESA_VERSION = "26.3.0-devel"
-PACKAGE_VERSION = "26.3.0-devel-git.4c18bbc637-pkg2"
+PACKAGE_VERSION = MESA_VERSION
 PATCHES = [ROOT / 'patches' / name for name in (
     'mesa-zink-null-guards.patch', 'mesa-msvc-release.patch', 'mesa-wgl-loader-init.patch')]
 MARKER = 'assembly-complete.json'
