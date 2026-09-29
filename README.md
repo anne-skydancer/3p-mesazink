@@ -123,7 +123,7 @@ this downloadable runtime.
 ## Reliable build/package workflow (pkg2)
 
 `package_support.py` is the version authority (`python package_support.py --version`).
-The build directory's generated VERSION.txt is the version consumed by Autobuild.
+The build directory's generated mesazink-version.txt is the version consumed by Autobuild.
 The initial pkg2 qualification retained its Mesa pin and three patches.
 The current source revision is listed in Contents and the qualification section below.
 
@@ -163,3 +163,10 @@ prove the shader/program guards or WGL loader initialization redundant.
 Windows/Linux package qualification and RX 9070 XT rendering-mechanism tests passed.
 See [qualification results](QUALIFICATION.md) for exact coverage and archive hashes.
 A logged-in Second Life scene remains to be qualified; the viewer pin is unchanged.
+
+## pkg2 integration correction
+
+The shared viewer dependency directory already contains SoLoud's `VERSION.txt`.
+Mesa pkg2 uses `mesazink-version.txt` for its version authority and both archive
+manifests. The source revision and runtime patches are unchanged. A regression
+test checks that existing dependency metadata remains untouched.

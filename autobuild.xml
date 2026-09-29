@@ -20,7 +20,7 @@
         <key>name</key>
         <string>mesazink</string>
         <key>version_file</key>
-        <string>VERSION.txt</string>
+        <string>mesazink-version.txt</string>
         <key>platforms</key>
         <map>
             <key>linux64</key>
@@ -31,7 +31,7 @@
                     <string>lib/release/mesa/libGLX_vulkanstorm.so.0</string>
                     <string>lib/release/mesa/libgallium_vulkanstorm.so</string>
                     <string>LICENSES/mesazink.txt</string>
-                    <string>VERSION.txt</string>
+                    <string>mesazink-version.txt</string>
                     <string>package-provenance.json</string>
                     <string>assembly-complete.json</string>
                 </array>
@@ -59,7 +59,7 @@
                     <string>bin/release/opengl32.dll</string>
                     <string>bin/release/libgallium_wgl.dll</string>
                     <string>LICENSES/mesazink.txt</string>
-                    <string>VERSION.txt</string>
+                    <string>mesazink-version.txt</string>
                     <string>package-provenance.json</string>
                     <string>assembly-complete.json</string>
                 </array>

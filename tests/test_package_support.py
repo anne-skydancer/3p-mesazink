@@ -23,6 +23,18 @@ class PackageTests(unittest.TestCase):
         dest.write_bytes(b'old'); import os; os.utime(dest, (2100000000,2100000000))
         self.assemble(); self.assertEqual(dest.read_bytes(), b'new-build')
         self.assertEqual(ps.verify(self.out)['payload']['bin/release/test.dll'], ps.sha256(self.src))
+    def test_version_metadata_does_not_claim_another_dependency_file(self):
+        self.out.mkdir()
+        shared_version = self.out / 'VERSION.txt'
+        shared_version.write_text('soloud-version')
+        self.assemble()
+        self.assertEqual(shared_version.read_text(), 'soloud-version')
+        self.assertEqual((self.out / 'mesazink-version.txt').read_text().strip(), ps.PACKAGE_VERSION)
+        self.assertNotIn('VERSION.txt', ps.verify(self.out)['payload'])
+        import xml.etree.ElementTree as ET
+        strings = [node.text for node in ET.parse(ps.ROOT / 'autobuild.xml').iter('string')]
+        self.assertNotIn('VERSION.txt', strings)
+        self.assertEqual(strings.count('mesazink-version.txt'), 3)
     def test_repeat_has_new_generation(self):
         self.assemble(); old=ps.verify(self.out)['generation']
         self.assemble(); self.assertNotEqual(old, ps.verify(self.out)['generation'])
