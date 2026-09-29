@@ -90,3 +90,16 @@ were updated independently. In-world viewer qualification remains pending.
   `76c3ed2a612f0e76a88becfc3effca90462102849bb02e8908fbf2ebc80ead32`
 - `mesazink-26.3.0-devel-git.4c18bbc637-pkg2-windows64.tar.zst`
   `30be90eff6b05977de8fae972321ec7c576412430de6e86c3ec01366f2fdceef`
+
+## Upstream version naming correction
+
+The current release is `26.3.0-devel`, with no added Git or packaging suffix. The earlier suffixed releases above are historical and superseded. Mesa source and patches are unchanged; revision identity is recorded in provenance instead of the version.
+
+Recipe: `9d9394f7caf4be8a0d6b9c2079be6784113fe66c`.
+CI: https://github.com/anne-skydancer/3p-mesazink/actions/runs/36559328204
+Release: https://github.com/anne-skydancer/3p-mesazink/releases/tag/26.3.0-devel
+
+Both platform builds, all 17 package tests, Linux software-Vulkan smoke, and combined archive verification passed. The exact CI archives were published and viewer pins updated independently in master and vkstorm-devel. The shared dependency metadata remains mesazink-version.txt.
+
+- `mesazink-26.3.0-devel-linux64.tar.zst`: `65c5118324210b06a43c452d66f1b6fadcce61f6d2ea6223ebcf79b02e58c144`
+- `mesazink-26.3.0-devel-windows64.tar.zst`: `fe92b7df8b266784997b4b28fba9341a37987faa087fd9e5a63ae4f32f071740`
