@@ -21,7 +21,6 @@ import json
 import os
 from pathlib import Path
 import shutil
-import stat
 import subprocess
 import sys
 
@@ -43,32 +42,6 @@ def patch_digest(patches):
     for patch in patches:
         digest.update(patch.read_bytes())
     return digest.hexdigest()
-
-
-def remove_tree(path: Path):
-    def remove_readonly(function, filename, error_info):
-        os.chmod(filename, stat.S_IWRITE)
-        function(filename)
-
-    # The freshly-created directory is briefly grabbed by the Windows search
-    # indexer / AV scanner, so deletion can fail with WinError 32. Retry a
-    # few times with a short backoff.
-    import time
-    for attempt in range(10):
-        try:
-            shutil.rmtree(path, onerror=remove_readonly)
-            return
-        except PermissionError:
-            if attempt == 9:
-                raise
-            time.sleep(1)
-
-
-def swap_into_place(temp: Path, out: Path):
-    """Atomically-ish replace out with temp (built alongside, then moved)."""
-    if out.exists():
-        remove_tree(out)
-    temp.rename(out)
 
 
 def ensure_checkout(destination: Path):

@@ -81,4 +81,23 @@ class PackageTests(unittest.TestCase):
             with self.assertRaises(RuntimeError):
                 ps.configure(self.root,self.root/'b',['-Dzlib:default_library=static'],lambda c:None)
 
+    def archive(self, extra=False):
+        import io, tarfile, zstandard
+        self.assemble()
+        memory=io.BytesIO()
+        with tarfile.open(fileobj=memory,mode='w') as tar:
+            for path in self.out.rglob('*'):
+                if path.is_file(): tar.add(path,arcname=path.relative_to(self.out).as_posix())
+            if extra:
+                data=b'unexpected';member=tarfile.TarInfo('bin/release/extra.dll');member.size=len(data)
+                tar.addfile(member,io.BytesIO(data))
+        result=self.root/'package.tar.zst'
+        result.write_bytes(zstandard.ZstdCompressor().compress(memory.getvalue()))
+        return result
+    def test_archive_checks_exact_payload(self):
+        package=ps.verify_archive(self.archive())
+        self.assertEqual(package['version'],ps.PACKAGE_VERSION)
+    def test_archive_rejects_untracked_runtime(self):
+        with self.assertRaises(RuntimeError): ps.verify_archive(self.archive(extra=True))
+
 if __name__=='__main__': unittest.main()
