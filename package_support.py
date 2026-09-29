@@ -11,9 +11,9 @@ import tempfile
 import uuid
 
 ROOT = Path(__file__).resolve().parent
-MESA_REVISION = "00e42c51b10d8e0769489156fa414f111897d515"
+MESA_REVISION = "4c18bbc63765c2f468c3fa094242e8654e78d196"
 MESA_VERSION = "26.3.0-devel"
-PACKAGE_VERSION = "26.3.0-devel-git.00e42c51b1-pkg2"
+PACKAGE_VERSION = "26.3.0-devel-git.4c18bbc637-pkg1"
 PATCHES = [ROOT / 'patches' / name for name in (
     'mesa-zink-null-guards.patch', 'mesa-msvc-release.patch', 'mesa-wgl-loader-init.patch')]
 MARKER = 'assembly-complete.json'

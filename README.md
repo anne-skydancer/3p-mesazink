@@ -147,3 +147,18 @@ existing assets. Linux includes the existing software-Vulkan smoke check; Window
 hardware rendering qualification remains separate.
 
 Tests: `python -m unittest discover -s tests -p 'test_*.py'`.
+
+## September 29 upstream qualification candidate
+
+Mesa source: `4c18bbc63765c2f468c3fa094242e8654e78d196` (`26.3.0-devel`),
+upstream main at 2026-09-29 09:26:29 UTC.
+Package identity: `26.3.0-devel-git.4c18bbc637-pkg1`.
+
+Includes upstream `3fe13b1c074`, which skips draws/dispatches when Vulkan pipeline
+creation returns a null handle. All three local patches remain: they still apply
+and their separate protections are absent upstream. This pipeline fix does not
+prove the shader/program guards or WGL loader initialization redundant.
+
+Qualification is pending. Archive validation and Linux software-Vulkan smoke tests
+do not establish Windows hardware rendering correctness or Second Life scene parity.
+The viewer dependency pin remains unchanged until qualification.
