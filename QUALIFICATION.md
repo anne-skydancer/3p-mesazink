@@ -68,3 +68,25 @@ staged viewer DLLs are unchanged. No release assets are overwritten.
   `4d1977305cb90344b3854f5716e2a09ef09494470af272e60ca2139423c3166e`
 - `mesazink-26.3.0-devel-git.4c18bbc637-pkg1-windows64.tar.zst`
   `f047f7e53bc86a474084be5ac2f9d1a4821372872bfefb9b0415714426bb7d1c`
+
+## pkg2 shared-dependency integration correction
+
+The first full viewer configure exposed a pkg1 archive collision with SoLoud's
+root `VERSION.txt`. Isolated Autobuild installation had not exercised coexistence.
+Pkg2 uses `mesazink-version.txt`; Mesa source and patches remain unchanged.
+
+Recipe: `5e64789c55f53a11a38b9a827bc9e4579606af44`.
+CI: https://github.com/anne-skydancer/3p-mesazink/actions/runs/36557766634
+
+All 17 package tests, Windows/Linux builds, Linux software-Vulkan smoke and
+archive identity checks passed. The actual pkg2 Windows binaries again passed
+core/shared-context, mesh, particle geometry, simulation/order, service and
+RGBA32F/RGBA16F blending tests on RX 9070 XT. Both archive payloads were explicitly
+checked to contain the namespaced version file and omit root VERSION.txt.
+Pkg2 is the published replacement; the viewer pins on master and vkstorm-devel
+were updated independently. In-world viewer qualification remains pending.
+
+- `mesazink-26.3.0-devel-git.4c18bbc637-pkg2-linux64.tar.zst`
+  `76c3ed2a612f0e76a88becfc3effca90462102849bb02e8908fbf2ebc80ead32`
+- `mesazink-26.3.0-devel-git.4c18bbc637-pkg2-windows64.tar.zst`
+  `30be90eff6b05977de8fae972321ec7c576412430de6e86c3ec01366f2fdceef`
