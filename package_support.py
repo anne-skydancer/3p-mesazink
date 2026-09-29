@@ -88,6 +88,15 @@ def configure(source, build, options, run):
             continue
         requested[key] = value
         actual = values.get(key)
+        if actual is None and key == 'zlib:default_library' and value == 'static':
+            # Meson does not expose subproject builtin default_library in
+            # --buildoptions. Check the generated library target instead.
+            targets = json.loads(capture(meson + ['introspect', '--targets', str(build)]))
+            libraries = [t['type'] for t in targets if t.get('subproject') == 'zlib'
+                         and t['type'] in ('static library', 'shared library')]
+            if not libraries or any(t != 'static library' for t in libraries):
+                raise RuntimeError('Cannot confirm a static zlib subproject')
+            actual = values[key] = 'static'
         expected = value.split(',') if isinstance(actual, list) and value else ([] if isinstance(actual, list) else value)
         if isinstance(actual, bool): expected = value.lower() == 'true'
         if actual != expected:
@@ -98,6 +107,47 @@ def configure(source, build, options, run):
 def begin(out):
     out.mkdir(parents=True, exist_ok=True)
     (out / MARKER).unlink(missing_ok=True)
+
+
+def validate_windows_payload(stage):
+    import ctypes
+    import struct
+    system = ctypes.create_unicode_buffer(32768)
+    if not ctypes.windll.kernel32.GetSystemDirectoryW(system, len(system)):
+        raise RuntimeError('Cannot locate Windows system directory')
+    reports = {}
+    for dll in (stage / 'bin/release').glob('*.dll'):
+        data = dll.read_bytes()
+        pe = struct.unpack_from('<I', data, 0x3c)[0]
+        if data[:2] != b'MZ' or data[pe:pe+4] != b'PE\0\0' or struct.unpack_from('<H',data,pe+4)[0] != 0x8664:
+            raise RuntimeError(f'Not a Windows x86-64 DLL: {dll}')
+        count = struct.unpack_from('<H',data,pe+6)[0]
+        opt_size = struct.unpack_from('<H',data,pe+20)[0]
+        opt = pe + 24
+        if struct.unpack_from('<H',data,opt)[0] != 0x20b: raise RuntimeError('Expected PE32+')
+        sections = []
+        for n in range(count):
+            offset = opt + opt_size + 40*n
+            size, va, raw_size, raw = struct.unpack_from('<IIII',data,offset+8)
+            sections.append((va, max(size,raw_size), raw))
+        def file_offset(rva):
+            for va,size,raw in sections:
+                if va <= rva < va+size: return raw + rva-va
+            raise RuntimeError('Import RVA outside image sections')
+        imports=[]
+        rva = struct.unpack_from('<I',data,opt+120)[0]
+        if rva:
+            offset=file_offset(rva)
+            while any(data[offset:offset+20]):
+                name_rva=struct.unpack_from('<I',data,offset+12)[0]
+                start=file_offset(name_rva);end=data.index(b'\0',start)
+                name=data[start:end].decode('ascii');imports.append(name)
+                if not name.lower().startswith(('api-ms-win-', 'ext-ms-win-')) and not any(
+                    (folder/name).is_file() for folder in (dll.parent,Path(system.value))):
+                    raise RuntimeError(f'Missing runtime import {name} needed by {dll.name}')
+                offset+=20
+        reports[dll.name]=imports
+    return reports
 
 
 def assemble(out, artifacts, configuration, toolchain, relocate=None):
@@ -116,13 +166,16 @@ def assemble(out, artifacts, configuration, toolchain, relocate=None):
             shutil.copy2(src, dest)
             source_hashes[relative.as_posix()] = sha256(src)
         if relocate: relocate(stage)
+        dependencies = validate_windows_payload(stage) if sys.platform == 'win32' and any(
+            relative.as_posix().endswith('/opengl32.dll') for _, relative in
+            [(src, Path(relative)) for src, relative in artifacts]) else {}
         (stage / 'VERSION.txt').write_text(PACKAGE_VERSION + '\n', encoding='utf-8')
         payload = {p.relative_to(stage).as_posix(): sha256(p) for p in stage.rglob('*') if p.is_file()}
         provenance = {'schema': 1, 'generation': uuid.uuid4().hex,
             'version': PACKAGE_VERSION, 'revision': MESA_REVISION,
             'patches': {p.name: source_hash(p) for p in PATCHES},
             'recipe': recipe_identity(), 'platform': sys.platform,
-            'toolchain': toolchain, 'configuration': configuration,
+            'toolchain': toolchain, 'configuration': configuration, 'runtime_imports': dependencies,
             'tools': {'python': sys.version, 'meson': capture([sys.executable, '-m', 'mesonbuild.mesonmain', '--version']),
                       'ninja': capture(['ninja', '--version'])},
             'source_hashes': source_hashes, 'payload': payload}

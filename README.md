@@ -1,6 +1,6 @@
 # 3p-mesazink
 
-Third-party Mesa Zink package for the Vulkanstorm viewer — the Gallium WGL
+Third-party Mesa Zink package for the Vulkanstorm viewer â€” the Gallium WGL
 `opengl32.dll` + `libgallium_wgl.dll` that let the viewer run its OpenGL
 pipeline over Vulkan ("Mesa/Zink" renderer selection).
 
@@ -28,7 +28,7 @@ runtime validation.
 ## Build configuration
 
 Meson, MSVC toolchain, release build, Zink only (no Vulkan drivers, no LLVM,
-no EGL/GLX/GLES — the WGL frontend is self-contained):
+no EGL/GLX/GLES â€” the WGL frontend is self-contained):
 
 ```
 meson setup build-vulkanstorm -Dbuildtype=release -Dvsenv=true \
@@ -51,7 +51,7 @@ and preloads the bundled `opengl32.dll` before the first GL import resolves.
 ## Building the package
 
 Prerequisites: Visual Studio 2022 (MSVC), Python 3, and the Python packages
-`meson>=1.4 mako packaging pyyaml setuptools ninja` (the build script can
+`meson>=1.4 mako packaging pyyaml setuptools ninja` plus flex/bison (the build script can
 install them).
 
 ```
@@ -118,3 +118,32 @@ Do not install these libraries over the system Mesa libraries. Viewer package
 staging and renderer selection must explicitly opt into this private provider.
 The viewer's Linux renderer selector integration is separate from producing
 this downloadable runtime.
+
+
+## Reliable build/package workflow (pkg2)
+
+`package_support.py` is the version authority (`python package_support.py --version`).
+The build directory's generated VERSION.txt is the version consumed by Autobuild.
+The Mesa pin and three patches remain unchanged in pkg2.
+
+Windows builds now reconfigure Meson on every invocation and compile through Meson
+so Visual Studio activation works on incremental runs. Source/compiler identities
+select separate build directories; existing unrelated checkouts are never deleted.
+Use a new `--root` if a checkout marker identifies another source revision.
+Windows also requires flex and bison; the CI workflow installs winflexbison3.
+
+Both platform builds assemble a fresh payload, record pre/post-relocation hashes,
+and write package-provenance.json and assembly-complete.json only after validation.
+Run `python package_support.py --verify build` before `autobuild package`.
+A failed build removes the completion marker, so its old payload is not qualified.
+The manifests include both provenance files. Windows validates PE architecture and
+non-delay-load imports against the payload and Windows system directory; this does
+not prove optional dynamically loaded Vulkan/driver availability.
+
+The dual-platform workflow verifies the exact archive contents and matching source,
+patch and recipe identity before allowing publication. Publication requires an
+explicit workflow_dispatch publish=true and creates a new release without replacing
+existing assets. Linux includes the existing software-Vulkan smoke check; Windows
+hardware rendering qualification remains separate.
+
+Tests: `python -m unittest discover -s tests -p 'test_*.py'`.

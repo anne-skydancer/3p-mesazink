@@ -71,4 +71,14 @@ class PackageTests(unittest.TestCase):
         a=self.root/'a';b=self.root/'b';a.write_bytes(b'a\nb\n');b.write_bytes(b'a\r\nb\r\n')
         self.assertEqual(ps.source_hash(a),ps.source_hash(b))
 
+    def test_subproject_static_library_checked_through_targets(self):
+        targets=[{'subproject':'zlib','type':'static library'}]
+        with patch.object(ps,'capture',side_effect=['[]',json.dumps(targets)]):
+            result=ps.configure(self.root,self.root/'b',['-Dzlib:default_library=static'],lambda c:None)
+        self.assertEqual(result['effective']['zlib:default_library'],'static')
+        targets[0]['type']='shared library'
+        with patch.object(ps,'capture',side_effect=['[]',json.dumps(targets)]):
+            with self.assertRaises(RuntimeError):
+                ps.configure(self.root,self.root/'b',['-Dzlib:default_library=static'],lambda c:None)
+
 if __name__=='__main__': unittest.main()
