@@ -8,7 +8,7 @@ pipeline over Vulkan ("Mesa/Zink" renderer selection).
 
 | Component | Upstream | Pinned | What we ship |
 |---|---|---|---|
-| Mesa (Zink gallium driver, WGL frontend) | [gitlab.freedesktop.org/mesa/mesa](https://gitlab.freedesktop.org/mesa/mesa) | `00e42c51b10d8e0769489156fa414f111897d515` (`26.3.0-devel`) | `bin/release/opengl32.dll`, `bin/release/libgallium_wgl.dll` |
+| Mesa (Zink gallium driver, WGL frontend) | [gitlab.freedesktop.org/mesa/mesa](https://gitlab.freedesktop.org/mesa/mesa) | `4c18bbc63765c2f468c3fa094242e8654e78d196` (`26.3.0-devel`) | `bin/release/opengl32.dll`, `bin/release/libgallium_wgl.dll` |
 
 The pinned Mesa main revision already carries AMD RX9000-series (gfx12/RADV)
 support. Three local patches are applied on top:
@@ -124,7 +124,8 @@ this downloadable runtime.
 
 `package_support.py` is the version authority (`python package_support.py --version`).
 The build directory's generated VERSION.txt is the version consumed by Autobuild.
-The Mesa pin and three patches remain unchanged in pkg2.
+The initial pkg2 qualification retained its Mesa pin and three patches.
+The current source revision is listed in Contents and the qualification section below.
 
 Windows builds now reconfigure Meson on every invocation and compile through Meson
 so Visual Studio activation works on incremental runs. Source/compiler identities
@@ -159,6 +160,6 @@ creation returns a null handle. All three local patches remain: they still apply
 and their separate protections are absent upstream. This pipeline fix does not
 prove the shader/program guards or WGL loader initialization redundant.
 
-Qualification is pending. Archive validation and Linux software-Vulkan smoke tests
-do not establish Windows hardware rendering correctness or Second Life scene parity.
-The viewer dependency pin remains unchanged until qualification.
+Windows/Linux package qualification and RX 9070 XT rendering-mechanism tests passed.
+See [qualification results](QUALIFICATION.md) for exact coverage and archive hashes.
+A logged-in Second Life scene remains to be qualified; the viewer pin is unchanged.
