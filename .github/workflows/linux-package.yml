@@ -77,6 +77,16 @@ jobs:
           python-version: '3.12'
       - name: Dependencies
         run: python -m pip install autobuild==3.9.3 meson ninja mako packaging pyyaml setuptools zstandard
+      - name: Parser generators
+        shell: pwsh
+        run: |
+          choco install winflexbison3 --yes --no-progress
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $tools = Get-ChildItem "$env:ChocolateyInstall/lib/winflexbison3" -Filter win_flex.exe -Recurse | Select-Object -First 1 -ExpandProperty DirectoryName
+          if (-not $tools) { throw "winflexbison3 tools not found" }
+          Copy-Item -LiteralPath "$tools/win_flex.exe" -Destination "$tools/flex.exe"
+          Copy-Item -LiteralPath "$tools/win_bison.exe" -Destination "$tools/bison.exe"
+          $tools | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
       - name: Unit tests
         run: python -m unittest discover -s tests -p 'test_*.py'
       - name: Build
