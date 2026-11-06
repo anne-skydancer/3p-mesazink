@@ -19,6 +19,10 @@
         <string>LICENSES/mesazink.txt</string>
         <key>name</key>
         <string>mesazink</string>
+        <key>source</key>
+        <string>https://github.com/anne-skydancer/3p-mesazink</string>
+        <key>source_type</key>
+        <string>git</string>
         <key>version_file</key>
         <string>mesazink-version.txt</string>
         <key>platforms</key>
@@ -31,6 +35,7 @@
                     <string>lib/release/mesa/libGLX_vulkanstorm.so.0</string>
                     <string>lib/release/mesa/libgallium_vulkanstorm.so</string>
                     <string>LICENSES/mesazink.txt</string>
+                    <string>LICENSES/mesazink-buildinfo.json</string>
                     <string>mesazink-version.txt</string>
                     <string>package-provenance.json</string>
                     <string>assembly-complete.json</string>
@@ -59,6 +64,7 @@
                     <string>bin/release/opengl32.dll</string>
                     <string>bin/release/libgallium_wgl.dll</string>
                     <string>LICENSES/mesazink.txt</string>
+                    <string>LICENSES/mesazink-buildinfo.json</string>
                     <string>mesazink-version.txt</string>
                     <string>package-provenance.json</string>
                     <string>assembly-complete.json</string>

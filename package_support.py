@@ -150,6 +150,66 @@ def validate_windows_payload(stage):
     return reports
 
 
+BUILDINFO = 'LICENSES/mesazink-buildinfo.json'
+
+
+def glibc_floor(stage):
+    """Newest GLIBC_ symbol version the staged ELF objects need, or None."""
+    if not sys.platform.startswith('linux'): return None
+    import re
+    found = set()
+    for lib in stage.rglob('*.so*'):
+        if lib.is_file():
+            found.update(re.findall(r'GLIBC_(\d+(?:\.\d+)*)', capture(['objdump', '-T', str(lib)])))
+    return 'GLIBC_' + max(found, key=lambda v: tuple(map(int, v.split('.')))) if found else None
+
+
+def os_identity():
+    info = {'machine': platform.machine()}
+    if sys.platform.startswith('linux'):
+        release = {}
+        try:
+            for line in Path('/etc/os-release').read_text().splitlines():
+                if '=' in line:
+                    k, v = line.split('=', 1); release[k] = v.strip('"')
+        except OSError:
+            pass
+        info.update(os=release.get('PRETTY_NAME', 'linux'), glibc=platform.libc_ver()[1])
+    else:
+        info.update(os=platform.platform())
+    info.update(runner_image=os.environ.get('ImageOS', '') + ' ' + os.environ.get('ImageVersion', ''),
+                container_image=os.environ.get('MESAZINK_IMAGE', ''))
+    return info
+
+
+def compiler_line(toolchain):
+    version = str(toolchain.get('version', ''))
+    return ('MSVC ' + version) if toolchain.get('platform') == 'win32' else (version.splitlines() or [''])[0]
+
+
+def build_info(stage, toolchain, configuration):
+    import datetime
+    server = os.environ.get('GITHUB_SERVER_URL', 'https://github.com')
+    repo = os.environ.get('GITHUB_REPOSITORY', 'anne-skydancer/3p-mesazink')
+    run_id = os.environ.get('GITHUB_RUN_ID', '')
+    tree = ''
+    try: tree = capture(['git', '-C', str(ROOT / 'mesa-src'), 'rev-parse', 'HEAD^{tree}'])
+    except Exception: pass
+    return {'schema': 1, 'package': 'mesazink', 'package_version': PACKAGE_VERSION,
+        'flavour': os.environ.get('MESAZINK_FLAVOUR', ''),
+        'autobuild_platform': 'windows64' if sys.platform == 'win32' else 'linux64',
+        'mesa': {'version': MESA_VERSION, 'commit': MESA_REVISION, 'source_tree_sha1': tree,
+                 'patches_sha256': {p.name: source_hash(p) for p in PATCHES}},
+        'recipe': {'repository': f'{server}/{repo}', 'commit': os.environ.get('GITHUB_SHA', ''),
+                   'recipe_sha256': recipe_identity()},
+        'ci': {'run_id': run_id, 'run_url': f'{server}/{repo}/actions/runs/{run_id}' if run_id else ''},
+        'build_host': os_identity(), 'compiler': compiler_line(toolchain),
+        'build_type': (configuration.get('requested') or {}).get('buildtype', 'release'),
+        'meson_options': configuration.get('requested', {}),
+        'min_glibc_required': glibc_floor(stage),
+        'build_date_utc': datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')}
+
+
 def assemble(out, artifacts, configuration, toolchain, relocate=None):
     """Artifacts are (source, relative payload path); commit marker is written last."""
     begin(out)
@@ -257,13 +317,41 @@ def verify_pair(archives):
     return packages
 
 
+def release_notes(archives):
+    """Markdown asset table from the build-info inside each archive."""
+    import tarfile
+    import zstandard
+    rows = []
+    for archive in sorted(Path(a) for a in archives):
+        data = archive.read_bytes()
+        info = None
+        with zstandard.ZstdDecompressor().stream_reader(archive.open('rb')) as stream:
+            with tarfile.open(fileobj=stream, mode='r|') as tar:
+                for member in tar:
+                    if member.name.lstrip('./') == BUILDINFO:
+                        info = json.loads(tar.extractfile(member).read())
+        if info is None: raise RuntimeError('No build-info in ' + archive.name)
+        host = info['build_host']
+        rows.append("\n".join([f"### `{archive.name}`", "",
+            f"- platform: {info['flavour'] or info['autobuild_platform']}",
+            f"- sha256: `{hashlib.sha256(data).hexdigest()}`", f"- sha1: `{hashlib.sha1(data).hexdigest()}`",
+            f"- build OS: {host['os']} ({(host.get('container_image') or host.get('runner_image') or '').strip()})",
+            f"- glibc floor: {info['min_glibc_required'] or 'n/a'}", f"- compiler: {info['compiler']}", ""]))
+    return rows
+
+
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('--version', action='store_true')
     parser.add_argument('--verify', type=Path)
     parser.add_argument('--archives', nargs='+', type=Path)
+    parser.add_argument('--notes', nargs='+', type=Path)
     args = parser.parse_args()
     if args.version: print(PACKAGE_VERSION)
     if args.verify: print(json.dumps(verify(args.verify), indent=2))
     if args.archives: verify_pair(args.archives)
+    if args.notes:
+        print(f'Mesa Zink {PACKAGE_VERSION}, Mesa {MESA_VERSION} commit {MESA_REVISION}.')
+        print()
+        print('\n'.join(release_notes(args.notes)))

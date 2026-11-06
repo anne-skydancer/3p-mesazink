@@ -111,3 +111,5 @@ Owner decision 2026-11-06: the Linux package is built directly on the GitHub `ub
 ## 26.3.0-devel.2: adds a Linux LTS archive
 
 The release carries three archives from one source version: `windows64`, `linux64` (built directly on `ubuntu-latest`) and `linux64-lts` (built in an `ubuntu:24.04` container; the job fails if any packaged shared object needs a `GLIBC_` newer than 2.39). Each package job is independent. Mesa source and patches are unchanged.
+
+Each package also carries `LICENSES/mesazink-buildinfo.json` (package version, Mesa commit and patch hashes, 3p repo commit, CI run, build OS/image, glibc, compiler, meson options, minimum required glibc symbol version, UTC build date). The release notes list each asset's sha256, sha1, platform, build OS, glibc floor and compiler.
