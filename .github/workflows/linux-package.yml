@@ -13,7 +13,7 @@ permissions:
   contents: read
 jobs:
   linux:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -47,6 +47,17 @@ jobs:
           export LIBGL_ALWAYS_SOFTWARE=true
           xvfb-run -a glxinfo -B | tee build/glxinfo.txt
           grep -i 'OpenGL renderer string:.*zink' build/glxinfo.txt
+      - name: Report required glibc
+        run: |
+          set -euo pipefail
+          newest=$(for lib in build/lib/release/mesa/*.so*; do objdump -T "$lib"; done | grep -o 'GLIBC_[0-9.]*' | sort -uV | tail -n1)
+          echo "runner: $(. /etc/os-release; echo "$PRETTY_NAME"), glibc $(ldd --version | head -n1)"
+          {
+            echo "### Newest glibc symbol version needed by packaged shared objects"
+            echo
+            echo "\`${newest:-none}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "newest ${newest:-none}"
       - name: Package
         run: |
           python package_support.py --verify build > build/verified-provenance.json

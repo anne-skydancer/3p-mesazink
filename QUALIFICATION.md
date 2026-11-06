@@ -103,3 +103,7 @@ Both platform builds, all 17 package tests, Linux software-Vulkan smoke, and com
 
 - `mesazink-26.3.0-devel-linux64.tar.zst`: `65c5118324210b06a43c452d66f1b6fadcce61f6d2ea6223ebcf79b02e58c144`
 - `mesazink-26.3.0-devel-windows64.tar.zst`: `fe92b7df8b266784997b4b28fba9341a37987faa087fd9e5a63ae4f32f071740`
+
+## 26.3.0-devel.1: Linux built on ubuntu-latest
+
+Owner decision 2026-11-06: the Linux package is built directly on the GitHub `ubuntu-latest` runner (no container), because the Vulkanstorm viewer's Linux build runs there. Mesa source and patches are unchanged from `26.3.0-devel`; only the Linux runner and the package version (`26.3.0-devel.1`) changed. The Linux job reports the newest `GLIBC_` symbol version needed by the packaged shared objects in its job summary.
