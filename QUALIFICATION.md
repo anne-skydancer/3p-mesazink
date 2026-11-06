@@ -107,3 +107,7 @@ Both platform builds, all 17 package tests, Linux software-Vulkan smoke, and com
 ## 26.3.0-devel.1: Linux built on ubuntu-latest
 
 Owner decision 2026-11-06: the Linux package is built directly on the GitHub `ubuntu-latest` runner (no container), because the Vulkanstorm viewer's Linux build runs there. Mesa source and patches are unchanged from `26.3.0-devel`; only the Linux runner and the package version (`26.3.0-devel.1`) changed. The Linux job reports the newest `GLIBC_` symbol version needed by the packaged shared objects in its job summary.
+
+## 26.3.0-devel.2: adds a Linux LTS archive
+
+The release carries three archives from one source version: `windows64`, `linux64` (built directly on `ubuntu-latest`) and `linux64-lts` (built in an `ubuntu:24.04` container; the job fails if any packaged shared object needs a `GLIBC_` newer than 2.39). Each package job is independent. Mesa source and patches are unchanged.
